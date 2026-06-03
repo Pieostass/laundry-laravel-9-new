@@ -27,7 +27,7 @@
             <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4">
                 <img src="{{ $item['image_src'] ?? asset('images/product-placeholder.png') }}"
                      alt="{{ $item['product_name'] }}"
-                     class="w-20 h-20 object-cover rounded-xl flex-shrink-0">
+                     class="w-20 aspect-square object-cover rounded-xl flex-shrink-0">
 
                 <div class="flex-1 min-w-0">
                     <h3 class="font-semibold text-gray-800 text-sm">{{ $item['product_name'] }}</h3>

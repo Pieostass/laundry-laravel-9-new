@@ -1,39 +1,48 @@
 <?php
 
-namespace App\Models;
+namespace App\Providers;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Enums\Role;
+use App\Models\User;
+use App\Services\OrderService;
+use App\Services\ProductService;
+use App\Services\SiteConfigService;
+use App\Services\UserService;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
-class SiteConfig extends Model
+class AppServiceProvider extends ServiceProvider
 {
-    // ── String primary key (mirrors Java @Id String configKey) ────────────────
-    protected $primaryKey = 'config_key';
-    public    $incrementing = false;
-    protected $keyType = 'string';
-
-    protected $fillable = [
-        'config_key',
-        'config_value',
-        'description',
-    ];
-
-    // ── Static helper: get a single config value with a fallback ──────────────
-
-    /**
-     * Mirrors Java SiteConfigService::get(key, defaultValue)
-     * Usage: SiteConfig::getValue('site_name', 'LaundryShop')
-     */
-    public static function getValue(string $key, string $default = ''): string
+    public function register(): void
     {
-        return static::find($key)?->config_value ?? $default;
+        $this->app->singleton(ProductService::class);
+        $this->app->singleton(OrderService::class);
+        $this->app->singleton(UserService::class);
+        $this->app->singleton(SiteConfigService::class);
     }
 
-    /**
-     * Returns all configs as a flat key→value array.
-     * Mirrors Java buildSiteConfigMap() in HomeController.
-     */
-    public static function asMap(): array
+    public function boot(): void
     {
-        return static::all()->pluck('config_value', 'config_key')->toArray();
+        $this->defineGates();
+        $this->shareGlobalViewData();
+    }
+
+    private function defineGates(): void
+    {
+        Gate::define('admin', fn(User $user) => $user->role === Role::ROLE_ADMIN);
+        Gate::define('staff', fn(User $user) => $user->role === Role::ROLE_STAFF);
+        Gate::define('staff-or-admin', fn(User $user) => in_array($user->role, [
+            Role::ROLE_STAFF,
+            Role::ROLE_ADMIN,
+        ], true));
+    }
+
+    private function shareGlobalViewData(): void
+    {
+        View::composer('*', function ($view) {
+            $siteConfigService = app(SiteConfigService::class);
+            $view->with('siteConfig', $siteConfigService->asMap());
+        });
     }
 }

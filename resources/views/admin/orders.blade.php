@@ -1,16 +1,26 @@
 @extends('layouts.admin')
-@section('title', 'Đơn hàng')
-@section('page-title', ' Quản lý đơn hàng')
+@section('title', 'Quản lý đơn hàng')
+@section('page-title', '🛒 Quản lý đơn hàng')
 
 @section('content')
 
-{{-- ── Status filter tabs — mirrors Java model.addAttribute("statuses", OrderStatus.values()) --}}
+{{-- Flash messages --}}
+@if(session('success'))
+<div class="mb-4 px-5 py-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-sm flex items-center gap-2">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    {{ session('success') }}
+</div>
+@endif
+@if(session('error'))
+<div class="mb-4 px-5 py-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm">⚠️ {{ session('error') }}</div>
+@endif
+
+{{-- ── Status filter tabs --}}
 <div class="flex flex-wrap gap-2 mb-6">
     <a href="{{ route('admin.orders') }}"
        class="px-4 py-1.5 rounded-full text-xs font-medium transition {{ !$currentStatus ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
         Tất cả
     </a>
-    {{-- th:each="s : ${statuses}" --}}
     @foreach($statuses as $s)
     <a href="{{ route('admin.orders', ['status' => $s->value]) }}"
        class="px-4 py-1.5 rounded-full text-xs font-medium transition {{ $currentStatus === $s->value ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
@@ -19,7 +29,7 @@
     @endforeach
 </div>
 
-{{-- ── Orders table ─────────────────────────────────────────────────────────── --}}
+{{-- ── Orders table --}}
 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -36,6 +46,11 @@
             </thead>
             <tbody class="divide-y divide-gray-50">
                 @forelse($orders as $order)
+                @php
+                    $orderStatusValue = $order->status instanceof \BackedEnum
+                        ? $order->status->value
+                        : (string) $order->status;
+                @endphp
                 <tr class="hover:bg-gray-50 transition">
                     <td class="px-5 py-3 font-mono text-gray-600">#{{ $order->id }}</td>
                     <td class="px-5 py-3 font-medium text-gray-800">{{ $order->full_name ?? $order->user?->full_name ?? '—' }}</td>
@@ -52,16 +67,16 @@
                     <td class="px-5 py-3">
                         <div class="flex items-center justify-center gap-2">
                             <a href="{{ route('admin.orders.show', $order->id) }}"
-                               class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100">
+                               class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 text-xs font-medium hover:bg-blue-100 transition">
                                 Chi tiết
                             </a>
-                            {{-- Inline status update — mirrors Java POST /orders/{id}/status --}}
                             <form method="POST" action="{{ route('admin.orders.status', $order->id) }}" class="flex items-center gap-1">
                                 @csrf
+                                @method('PUT')
                                 <select name="status" onchange="this.form.submit()"
-                                        class="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none">
+                                        class="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-blue-500 outline-none cursor-pointer">
                                     @foreach($statuses as $s)
-                                    <option value="{{ $s->value }}" {{ $order->status?->value === $s->value ? 'selected' : '' }}>
+                                    <option value="{{ $s->value }}" {{ $orderStatusValue === $s->value ? 'selected' : '' }}>
                                         {{ $s->label() }}
                                     </option>
                                     @endforeach
@@ -73,7 +88,7 @@
                 @empty
                 <tr>
                     <td colspan="7" class="px-5 py-12 text-center text-gray-400">
-                        <div class="text-3xl mb-2"></div>
+                        <div class="text-3xl mb-2">📭</div>
                         <p>Chưa có đơn hàng nào.</p>
                     </td>
                 </tr>
@@ -87,4 +102,5 @@
     </div>
     @endif
 </div>
+
 @endsection

@@ -21,7 +21,6 @@ class Product extends Model
         'category_id',
     ];
 
-    // Laravel 9: use $casts property
     protected $casts = [
         'price'          => 'decimal:2',
         'active'         => 'boolean',
@@ -64,17 +63,16 @@ class Product extends Model
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-
-    public function getImageSrcAttribute(): string
-    {
-        if (!$this->image_url) {
-            return asset('images/product-placeholder.png');
-        }
-
-        if (str_starts_with($this->image_url, 'http')) {
-            return $this->image_url;
-        }
-
-        return asset('storage/' . $this->image_url);
+public function getImageSrcAttribute(): string
+{
+    if (empty($this->image_url)) {
+        return asset('images/product-placeholder.png');
     }
+
+    if (str_starts_with($this->image_url, 'http')) {
+        return $this->image_url;
+    }
+
+    return 'https://globalmart24.com/' . $this->image_url;
+}  
 }
